@@ -1,7 +1,7 @@
 #!/usr/bin/env pybricks-micropython
 #!/usr/bin/env pybricks-micropython
 
-#Version 1.01
+#Version 1.02
 
 
 from pybricks.hubs import EV3Brick
@@ -200,6 +200,7 @@ class mindsensors_i2c():
 
 ## TFTPack: this class provides functions for TFTPackNx from mindsensors.com
 #  for read and write operations.
+
 class TFTPACK():
     TouchPoint =[0,0]
 
@@ -245,6 +246,12 @@ class TFTPACK():
     def clear_display(self):
         self.write_command(b'\x01'+ b'\x00')
 
+    ## Toggels the TFTPack display Backlight
+    #  @param self The object pointer.
+    def backlight(self,state):
+        self.write_command(b'\x01'+ b'\x01'+state.to_bytes(1, 'little'))    
+
+
     def get_touch(self):
         self.write_command(b'\x01'+ b'\x02')
         return self.TouchPoint     
@@ -268,21 +275,23 @@ class TFTPACK():
     ## set_curser at xy of  TFTPack display
     #  @param self The object pointer.
     #   @param  Xpos and Ypos
-    def set_curser_xy(self, xpos,ypos):
-        self.write_command(b'\x01' + b'\x18'+xpos.to_bytes(2, 'little')+ypos.to_bytes(2, 'little'))    
+    def set_curser_xy(self,position):
+        self.write_command(b'\x01' + b'\x18'+position[0].to_bytes(2, 'little')+position[1].to_bytes(2, 'little'))
+  
 
     ## set_color of  TFTPack display text to [R,G,B]
     #  @param self The object pointer.
     #  @param RGB tuple  as [R,G,B]
-    def set_color(self,RGB):
-        self.write_command(b'\x01' + b'\x07'+self.rgb_hex565(RGB).to_bytes(2, 'little') ) 
+    def set_color(self,Frgb,Brgb=[0,0,0]):
+        self.write_command(b'\x01' + b'\x07'+self.rgb_hex565(Frgb).to_bytes(2, 'little')+self.rgb_hex565(Brgb).to_bytes(2, 'little') )
         
     ## set_font_size of  TFTPack display text 
     #  @param self The object pointer.
     #  @param size  of font
-    def set_font_size(self,size):
-        self.write_command(b'\x01' + b'\x06'+size.to_bytes(1, 'little')) 
-     
+    def set_font_size(self,font,size):
+        self.write_command(b'\x01' + b'\x06'+size.to_bytes(1, 'little')+font.to_bytes(1, 'little'))
+
+        
   
 
     ## draw_line on  TFTPack display from start to finish with Color RGB
@@ -1349,7 +1358,7 @@ class PFMATE(mindsensors_i2c):
     #  @param self The object pointer.
     #  @param pfmate_address Address of your PFMate.
     def __init__(self,port,  pfmate_address = PFMATE_ADDRESS):
-        #the NXTMMX address
+        #the PFMate address
         mindsensors_i2c.__init__(self,port,  pfmate_address)
 
     ## Writes a specified command on the command register of the PFMate
@@ -1430,4 +1439,217 @@ class SUMOEYES(AnalogSensor):
         return results
 
   
+## NXTSERVO: this class provides servo motor control functions
+class NXTSERVO(mindsensors_i2c):
+
+    ## Default NXTServo I2C Address
+    NXTSERVO_ADDRESS = 0xB0
+    ## Constant Voltage Multiplier
+    NXTSERVO_VBATT_SCALER = 37
+    ## Command Register
+    NXTSERVO_COMMAND = 0x41
+    ## Input Power Voltage Register
+    NXTSERVO_VBATT = 0x62
+
+    ## Initialize the class with the i2c address of your NXTServo
+    #  @param self The object pointer.
+    #  @param nxtservo_address Address of your NXTServo.
+    def __init__(self,port, nxtservo_address = NXTSERVO_ADDRESS):
+        mindsensors_i2c.__init__(self,port, nxtservo_address)
+        self.command('S')
+
+    ## Writes a specified command on the command register of the NXTServo
+    #  @param self The object pointer.
+    #  @param cmd The command you wish the NXTServo to execute.
+    def command(self, cmd):
+        self.writeByte(self.NXTSERVO_COMMAND, cmd)
         
+
+    ## Reads NXTServo battery voltage in millivolts
+    #  @param self The object pointer.
+    def battVoltage(self):
+        return self.readByte(self.NXTSERVO_VBATT) * self.NXTSERVO_VBATT_SCALER
+        
+
+    ## Sets the speed of a servo
+    #  Has no effect on continuous rotation servos.
+    #  @param self The object pointer.
+    #  @param servoNumber The number of the servo to set its speed (1-8).
+    #  @param speed The speed to set the servo (1-255).
+    def setSpeed(self, servoNumber, speed):
+        reg = 0x52 + servoNumber-1
+        spd = speed % 256 # note: speed 0 is the same as speed 255
+        self.writeByte(reg, spd)
+
+    ## Sets the position of a servo
+    #  @param self The object pointer.
+    #  @param servoNumber The number of the servo to set its position (1-8).
+    #  @param position The position to set the servo (1-255).
+    def setPosition(self, servoNumber, position):
+        reg = 0x5A + servoNumber-1
+        pos = position % 256
+        self.writeByte(reg, pos)
+
+    ## Runs the specified servo to a specific position at a specified speed
+    #  @param self The object pointer.
+    #  @param servoNumber The number of the servo to move (1-8).
+    #  @param position The position to set the servo (1-255).
+    #  @param speed The speed to set the servo (1-255) (not used for continuous rotation servos).
+    def runServo(self, servoNumber, position, speed = None):
+        #self.setPosition(servoNumber, position)
+        if speed: self.setSpeed(servoNumber, speed)
+        self.setPosition(servoNumber, position)
+
+    ## Store the current settings of the specified servo to initial/default settings (remembered when powered on)
+    #  @param self The object pointer.
+    #  @param servoNumber The number of the servo to save its settings (1-8).
+    def storeInitial(self, servoNumber):
+        self.command('I')
+        self.command(servoNumber)
+
+    ## Reset all servos to their default settings
+    #  @param self The object pointer.
+    def reset(self):
+        self.command('S')
+
+    ## Stop a specific servo
+    #  This will also completely stop a continuous rotation servo, regardless of its neutral point.
+    #  @param self The object pointer.
+    #  @param servoNumber The number of the servo to stop (1-8).
+    def stopServo(self, servoNumber):
+        self.setPosition(servoNumber, 0)
+
+    ## Sets the default neutral position of a user defined servo
+    #  @param self The object pointer.
+    #  @param servoNumber The number of the servo you wish to set to the default position.
+    def setNeutral(self, servoNumber):
+        self.command(73)
+        time.sleep(0.1)
+        self.command(servoNumber + 48)
+
+    # warning: macro methods are untested
+
+    ## Stop the onboard macro on the NXTServo
+    #  @param self The object pointer.
+    def haltMacro(self):
+        self.command('H')
+
+    ## Resume the onboard macro on the NXTServo
+    #  @param self The object pointer.
+    def resumeMacro(self):
+        self.command('R')
+
+    ## Go to a given EEPROM position
+    #  This command re-initializes the macro environment
+    #  @param self The object pointer.
+    #  @param position The EEPROM position to go to
+    def gotoEEPROM(self, position):
+        self.command('G')
+        self.command(position)
+
+    ## Edit the onboard macro
+    #  @param self The object pointer.
+    def editMacro(self):
+        self.command('E')
+        self.command('m')
+
+    ## Temporarily pause the running macro
+    #  @param self The object pointer.
+    def pauseMacro(self):
+        self.command('P')        
+        
+        
+        
+        
+## PSPNX: this class provides servo motor control functions
+class PSPNX(mindsensors_i2c):
+
+    ## Default PSPNX I2C Address
+    PSPNX_ADDRESS = 0x02
+    ## Command Register
+    PSPNX_COMMAND = 0x41
+    ## Button Set 1 Register
+    PSPNX_BTN1 = 0x42
+    ## Button Set 1 Register
+    PSPNX_BTN2 = 0x43
+    ## X-Left joystick Register
+    PSPNX_LX = 0x44
+    ## Y-Left joystick Register
+    PSPNX_LX = 0x45
+    ## X-Right joystick Register
+    PSPNX_RX = 0x46
+    ## Y-Right joystick Register
+    PSPNX_LX = 0x47
+    
+    ## joystick button bitmask
+    PSPNX_RA = 0x7F    #right Arrow
+    PSPNX_DA = 0xbF    #down Arrow
+    PSPNX_LA = 0xdF    #Left Arrow
+    PSPNX_UA = 0xeF    #Up Arrow
+    PSPNX_R3 = 0xFb    #R3
+    PSPNX_L3 = 0xfd    #L3
+    PSPNX_SQ = 0x7F    #Square
+    PSPNX_X = 0xbF     #Cross
+    PSPNX_CR = 0xdF    #Circle
+    PSPNX_TR = 0xeF    #Triangle
+    PSPNX_R1 = 0xf7    #R1
+    PSPNX_L1 = 0xFb    #L1
+    PSPNX_R2 = 0xFd    #R2
+    PSPNX_L3 = 0xfd    #L3
+    
+
+    ## Initialize the class with the i2c address of your PSPNX
+    #  @param self The object pointer.
+    #  @param PSPNX_address Address of your PSPNX.
+    def __init__(self,port, PSPNX_address = PSPNX_ADDRESS):
+        mindsensors_i2c.__init__(self,port, PSPNX_address)
+        self.command('I')
+
+    ## Writes a specified command on the command register of the PSPNX
+    #  @param self The object pointer.
+    #  @param cmd The command you wish the PSPNX to execute.
+    def command(self, cmd):
+        self.writeByte(self.PSPNX_COMMAND, cmd)
+        
+
+    ## Reads PSPNX Button Set 1 Register
+    #  @param self The object pointer.
+    def Button_Set_1 (self):
+        return self.readByte(self.PSPNX_BTN1)
+        
+    ## Reads PSPNX Button Set 2 Register
+    #  @param self The object pointer.
+    def Button_Set_2 (self):
+        return self.readByte(self.PSPNX_BTN2)
+        
+    ## Reads PSPNX X-Left joystick Register
+    #  @param self The object pointer.
+    def X_LEFT (self):
+        return self.readByte(self.PSPNX_LX)
+        
+    ## Reads PSPNX Y-Left joystick Register
+    #  @param self The object pointer.
+    def Y_LEFT (self):
+        return self.readByte(self.PSPNX_LY)    
+        
+        
+    ## Reads PSPNX X-Right joystick Register
+    #  @param self The object pointer.
+    def X_RIGHT (self):
+        return self.readByte(self.PSPNX_RX)
+        
+    ## Reads PSPNX Y-Right joystick Register
+    #  @param self The object pointer.
+    def Y_RIGHT (self):
+        return self.readByte(self.PSPNX_RY)     
+        
+    ## Returns if button from Set 1 is pressed 
+    #  @param self The object pointer.
+    def IS_PRESSED1 (self,button):
+        return self.Button_Set_1()&button    
+        
+    ## Returns if button from Set 1 is pressed 
+    #  @param self The object pointer.
+    def IS_PRESSED2 (self,button):
+        return self.Button_Set_2()&button               
+        return self.Button_Set_2()&button               
