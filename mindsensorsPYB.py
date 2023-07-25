@@ -1061,7 +1061,7 @@ class ABSIMU(mindsensors_i2c):
     #  @param self The object pointer.
     #  @param command Value to write to the command register.
     def command(self, command):
-        self.writeByte(COMMAND, command)
+        self.writeByte(self.COMMAND, command)
 
     ## Reads the tilt value along the x-axis
     #  @param self The object pointer.
