@@ -1192,25 +1192,25 @@ class ABSIMU(mindsensors_i2c):
     ## Sets accelerometer sensitivity to 2G
     #  @param self The object pointer.
     def accel_2G(self):
-        self.command(49)
+        self.command('1')
         
 
     ## Sets accelerometer sensitivity to 4G
     #  @param self The object pointer.
     def accel_4G(self):
-        self.command(50)
+        self.command('2')
         
 
     ## Sets accelerometer sensitivity to 8G
     #  @param self The object pointer.
     def accel_8G(self):
-        self.command(51)
+        self.command('3')
         
 
     ## Sets accelerometer sensitivity to 16G
     #  @param self The object pointer.
     def accel_16G(self):
-        self.command(52)
+        self.command('4')
         
 
 ## CURRENT: this class provides functions for NXTCurrentMeter from mindsensors.com
