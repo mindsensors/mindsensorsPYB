@@ -15,6 +15,8 @@ from  mindsensorsPYB import IRThermometer
 from  mindsensorsPYB import VOLT
 from  mindsensorsPYB import PFMATE
 from  mindsensorsPYB import SUMOEYES
+from  mindsensorsPYB import EV3Light
+from  mindsensorsPYB import NumericPad
 
 import os
 import sys
