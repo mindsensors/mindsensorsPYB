@@ -220,6 +220,27 @@ def Sumotest():
     sumo = SUMOEYES(Port.S1)
     print(sumo.read())
 
+def EV3LightTest() :
+    light= EV3Light(Port.S1,0x2C)
+    debug_print(light.GetFirmwareVersion())
+    debug_print(light.GetDeviceId())
+    for i in  range(1, 15):
+        light.clear()    
+        light.lightled(i,250,0,0)
+        time.sleep(.1)
+        light.lightled(i,0,250,0)
+        time.sleep(.1)
+        light.lightled(i,0,0,250)
+        time.sleep(.1)
+    light.clear() 
+
+def NumericPadTest() :
+    pad= NumericPad(Port.S1,0xB4)
+    #pad.setup()
+    while(1):
+        print(pad.DecodeKeys(pad.GetKeysPressed()))
+        time.sleep(.1)
+
 
 #PPS58Test()
 #matrixTest()
@@ -231,4 +252,6 @@ def Sumotest():
 #IRThermometerTest()
 #VoltTest()
 #PFMATETest() 
-Sumotest()
+#Sumotest()
+#EV3LightTest()
+NumericPadTest()
