@@ -1652,4 +1652,152 @@ class PSPNX(mindsensors_i2c):
     #  @param self The object pointer.
     def IS_PRESSED2 (self,button):
         return self.Button_Set_2()&button               
-        return self.Button_Set_2()&button               
+        return self.Button_Set_2()&button    
+
+## EV3Light : this class provides EV3Dev specific interface for the
+#  EV3Light sensor:
+#  
+#
+class EV3Light(mindsensors_i2c):
+    ## Default I2C Address
+    EV3Light_ADDRESS = 0x2A
+    ## Command Register
+    EV3Light_COMMAND = 0x41 
+    EV3Light_RGB = 0x42
+    EV3Light_Update = 0x46
+    EV3Light_LED_Index = 0x46
+    
+
+    ## Initialize the class with the i2c address of your device
+    #  @param self The object pointer.
+    #  @param port The Ev3 port.
+    #  @param address Address of your device
+    #  @remark
+    def __init__(self, port,i2c_address=EV3Light_ADDRESS):
+        mindsensors_i2c.__init__(self,port, i2c_address)
+    
+    ## Writes a specified command on the command register of the EV3Light
+    #  @param self The object pointer.
+    #  @param cmd The command you wish the EV3Light to execute.
+    def command(self, cmd):
+       self.writeByte(self.EV3Light_COMMAND,cmd)
+
+    ## Controls single LED
+    #  @param self The object pointer.
+    #  @param led id or mode, if led ==0 the mode is V1
+    #  @param R Red intensity.
+    #  @param G Green intensity.
+    #  @param B Blue intensity.
+    
+    def lightled(self, led, R,G,B):
+       
+        if led==0 :  self.command('S')
+        else :self.command('I') 
+        time.sleep(.1)
+        array = [R,G,B,led,0x1]
+        self.writeArray(self.EV3Light_RGB, array)
+        time.sleep(.1)
+        
+    def clear(self):
+        self.lightled(0,0,0,0)   
+
+
+## Numericpad : this class provides EV3Dev specific interface for the
+#  Numericpad sensor:
+#  
+#
+class NumericPad(mindsensors_i2c):
+    ## Default I2C Address
+    NumericPad_ADDRESS = 0xB4
+    ## status Register
+    NumericPad_KEY_STATUS_REG = 0x00
+    
+    
+
+    ## Initialize the class with the i2c address of your device
+    #  @param self The object pointer.
+    #  @param port The PiStorms bank.
+    #  @param address Address of your device
+    #  @remark
+    def __init__(self, port,i2c_address=NumericPad_ADDRESS):
+        mindsensors_i2c.__init__(self,port, i2c_address)
+    
+    
+
+    ## Setup NumericPad
+     #  @param self The object pointer.
+    
+    def setup(self):
+       
+        time.sleep(.1)
+        array = [0x0F, 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F]
+        self.writeArray(0x41, array)
+        #time.sleep(.1)
+
+        array = [ 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F]
+        self.writeArray(0x4A, array)
+        #time.sleep(.1)
+
+        array = [  0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F]
+        self.writeArray(0x52, array)
+        #time.sleep(.1)
+
+        array = [  0x0b, 0x20, 0x0C]
+        self.writeArray(0x5C, array)
+        #time.sleep(.1)
+
+        array = [ 0x01, 0x01, 0x00, 0x00, 0x01, 0x01, 0xFF, 0x02]
+        self.writeArray(0x2B, array)
+        #time.sleep(.1)
+
+        array = [ 0x0b]
+        self.writeArray(0x7B, array)
+        #time.sleep(.1)
+
+        array = [  0x9C, 0x65, 0x8C]
+        self.writeArray(0x7D, array)
+        #time.sleep(.1)
+
+    def  GetKeysPressed(self)  :
+          return self.readInteger(0x00)& 0x0FFF
+        
+    def DecodeKeys(self,KeyBits) :        
+        keyMap = [ '4', '1', '7', '*', '5', '2', '8', '0', '3', '6', '9', '#' ]
+        keypressed=[]
+        if (KeyBits>=2048):
+            KeyBits-=2048
+            keypressed.append("4")
+        if (KeyBits>=1024):
+            KeyBits-=1024
+            keypressed.append("1")  
+        if (KeyBits>=512):
+            KeyBits-=512
+            keypressed.append("7")
+        if (KeyBits>=256):
+            KeyBits-=256
+            keypressed.append("*")
+        if (KeyBits>=128):
+            KeyBits-=128
+            keypressed.append("5")
+        if (KeyBits>=64):
+            KeyBits-=64
+            keypressed.append("2")
+        if (KeyBits>=32):
+            KeyBits-=32
+            keypressed.append("8")
+        if (KeyBits>=16):
+            KeyBits-=16
+            keypressed.append("0")
+        if (KeyBits>=8):
+            KeyBits-=8
+            keypressed.append("3")
+        if (KeyBits>=4):
+            KeyBits-=4
+            keypressed.append("6")                            
+        if (KeyBits>=2):
+            KeyBits-=2
+            keypressed.append("9")
+        if (KeyBits>=1):
+            KeyBits-=1
+            keypressed.append("#")    
+        return     keypressed
