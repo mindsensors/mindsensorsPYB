@@ -1721,7 +1721,7 @@ class NumericPad(mindsensors_i2c):
     #  @remark
     def __init__(self, port,i2c_address=NumericPad_ADDRESS):
         mindsensors_i2c.__init__(self,port, i2c_address)
-    
+        self.setup()
     
 
     ## Setup NumericPad
@@ -1729,75 +1729,40 @@ class NumericPad(mindsensors_i2c):
     
     def setup(self):
        
-        time.sleep(.1)
         array = [0x0F, 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F]
         self.writeArray(0x41, array)
-        #time.sleep(.1)
-
         array = [ 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F]
         self.writeArray(0x4A, array)
-        #time.sleep(.1)
-
         array = [  0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F, 0x0A, 0x0F]
         self.writeArray(0x52, array)
-        #time.sleep(.1)
-
         array = [  0x0b, 0x20, 0x0C]
         self.writeArray(0x5C, array)
-        #time.sleep(.1)
-
         array = [ 0x01, 0x01, 0x00, 0x00, 0x01, 0x01, 0xFF, 0x02]
         self.writeArray(0x2B, array)
-        #time.sleep(.1)
-
         array = [ 0x0b]
         self.writeArray(0x7B, array)
-        #time.sleep(.1)
-
         array = [  0x9C, 0x65, 0x8C]
         self.writeArray(0x7D, array)
-        #time.sleep(.1)
+        time.sleep(.1)
 
     def  GetKeysPressed(self)  :
           return self.readInteger(0x00)& 0x0FFF
         
+    
+
     def DecodeKeys(self,KeyBits) :        
         keyMap = [ '4', '1', '7', '*', '5', '2', '8', '0', '3', '6', '9', '#' ]
         keypressed=[]
-        if (KeyBits>=2048):
-            KeyBits-=2048
-            keypressed.append("4")
-        if (KeyBits>=1024):
-            KeyBits-=1024
-            keypressed.append("1")  
-        if (KeyBits>=512):
-            KeyBits-=512
-            keypressed.append("7")
-        if (KeyBits>=256):
-            KeyBits-=256
-            keypressed.append("*")
-        if (KeyBits>=128):
-            KeyBits-=128
-            keypressed.append("5")
-        if (KeyBits>=64):
-            KeyBits-=64
-            keypressed.append("2")
-        if (KeyBits>=32):
-            KeyBits-=32
-            keypressed.append("8")
-        if (KeyBits>=16):
-            KeyBits-=16
-            keypressed.append("0")
-        if (KeyBits>=8):
-            KeyBits-=8
-            keypressed.append("3")
-        if (KeyBits>=4):
-            KeyBits-=4
-            keypressed.append("6")                            
-        if (KeyBits>=2):
-            KeyBits-=2
-            keypressed.append("9")
-        if (KeyBits>=1):
-            KeyBits-=1
-            keypressed.append("#")    
+        if KeyBits&0x0800:keypressed.append("4")
+        if KeyBits&0x0400:keypressed.append("1")
+        if KeyBits&0x0200:keypressed.append("7")
+        if KeyBits&0x0100:keypressed.append("*")
+        if KeyBits&0x080:keypressed.append("5")
+        if KeyBits&0x040:keypressed.append("2")
+        if KeyBits&0x020:keypressed.append("8")
+        if KeyBits&0x010:keypressed.append("0")
+        if KeyBits&0x008:keypressed.append("3")
+        if KeyBits&0x004:keypressed.append("6")
+        if KeyBits&0x002:keypressed.append("9")
+        if KeyBits&0x001:keypressed.append("#")
         return     keypressed
