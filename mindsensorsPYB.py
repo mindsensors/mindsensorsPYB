@@ -989,11 +989,11 @@ class NXTCAM(mindsensors_i2c):
     #  cam.startTracking()
     #  cam.trackObject()
     #  b = cam.getBlobs(1)
-    #  print "Color: " + str(b.color)
-    #  print "Left: " + str(b.left)
-    #  print "Top: " + str(b.top)
-    #  print "Right: " + str(b.right)
-    #  print "Bottom: " + str(b.bottom)
+    #  print ("Color: " + str(b.color))
+    #  print ("Left: " + str(b.left))
+    #  print ("Top: " + str(b.top))
+    #  print ("Right: " + str(b.right))
+    #  print ("Bottom: " + str(b.bottom))
     #  @endcode
     def getBlobs(self, blobNum = 1):
         data= [0,0,0,0,0]
@@ -1766,3 +1766,529 @@ class NumericPad(mindsensors_i2c):
         if KeyBits&0x002:keypressed.append("9")
         if KeyBits&0x001:keypressed.append("#")
         return     keypressed
+        
+## MMX: this class provides motor control functions for use with NXTMMX
+
+class MMX(mindsensors_i2c):
+
+    ## Default NXTMMX I2C Address
+    MMX_ADDRESS = (0x06)
+    ## Constant Voltage Multipler
+    MMX_VOLTAGE_MULTIPLIER = 37
+
+    ## Constant to specify Motor 1
+    MMX_Motor_1        =        0x01
+    ## Constant to specify Motor 2
+    MMX_Motor_2        =        0x02
+    ## Constant to specify both Motors
+    MMX_Motor_Both     =        0x03
+
+    ## Constant to specify Float Action
+    MMX_Next_Action_Float   =   0x00
+    ## Constant to specify Brake Action
+    MMX_Next_Action_Brake   =   0x01
+    ## Constant to specify Hold Action
+    MMX_Next_Action_BrakeHold = 0x02
+
+    ## Constant to specify Forward Motion
+    MMX_Direction_Forward   =   0x01
+    ## Constant to specify Reverse Motion
+    MMX_Direction_Reverse   =   0x00
+
+    ## Constant to specify Relative Encoder Position
+    MMX_Move_Relative = 0x01
+    ## Constant to specify Absolute Encoder Position
+    MMX_Move_Absolute = 0x00
+
+    ## Constant to Wait for Next Action
+    MMX_Completion_Wait_For   =  0x01
+    ## Constant to NOT Wait for Next Action
+    MMX_Completion_Dont_Wait  = 0x00
+
+    ## Constant for commonly used Full Speed value
+    MMX_Speed_Full = 90
+    ## Constant for commonly used Moderate Speed value
+    MMX_Speed_Medium = 60
+    ## Constant for commonly used Slow Speed value
+    MMX_Speed_Slow  = 25
+
+    ## Constant to specify Speed bit of Motor Control byte
+    MMX_CONTROL_SPEED  =    0x01
+    ## Constant to specify Ramp bit of Motor Control byte
+    MMX_CONTROL_RAMP   =    0x02
+    ## Constant to specify Relative bit of Motor Control byte
+    MMX_CONTROL_RELATIVE =  0x04
+    ## Constant to specify Tacho bit of Motor Control byte
+    MMX_CONTROL_TACHO  =    0x08
+    ## Constant to specify Brake bit of Motor Control byte
+    MMX_CONTROL_BRK    =    0x10
+    ## Constant to specify On bit of Motor Control byte
+    MMX_CONTROL_ON     =    0x20
+    ## Constant to specify Time bit of Motor Control byte
+    MMX_CONTROL_TIME  =     0x40
+    ## Constant to specify Go bit of Motor Control byte
+    MMX_CONTROL_GO   =      0x80
+
+    ## Command Register
+    MMX_COMMAND = 0x41
+    ## Motor 1 Encoder Target Register
+    MMX_SETPT_M1  =   0x42
+    ## Motor 1 Speed Register
+    MMX_SPEED_M1  =   0x46
+    ## Motor 1 Time Register
+    MMX_TIME_M1  =    0x47
+    ## Motor 1 Motor Command B Register
+    MMX_CMD_B_M1  =   0x48
+    ## Motor 1 Motor Command A Register
+    MMX_CMD_A_M1  =   0x49
+    ## Motor 2 Encoder Target Register
+    MMX_SETPT_M2  =   0x4A
+    ## Motor 2 Speed Register
+    MMX_SPEED_M2  =   0x4E
+    ## Motor 2 Time Register
+    MMX_TIME_M2   =   0x4F
+    ## Motor 1 Motor Command B Register
+    MMX_CMD_B_M2  =   0x50
+    ## Motor 1 Motor Command A Register
+    MMX_CMD_A_M2  =   0x51
+    ## Motor 1 Encoder Position Register. Will return a long singed integer value
+    MMX_POSITION_M1 = 0x62
+    ## Motor 2 Encoder Position Register. Will return a long singed integer value
+    MMX_POSITION_M2 = 0x66
+    ## Motor 1 Status Register. Will return a byte value
+    MMX_STATUS_M1   = 0x72
+    ## Motor 2 Status Register. Will return a byte value
+    MMX_STATUS_M2   = 0x73
+    ## Motor 1 Tasks Register. Will return a byte value
+    MMX_TASKS_M1    = 0x76
+    ## Motor 2 Tasks Register. Will return a byte value
+    MMX_TASKS_M2   =  0x77
+    ## Position Kp Register
+    MMX_P_Kp  =  0x7A
+    ## Position Ki Register
+    MMX_P_Ki  =  0x7C
+    ## Position Kd Register
+    MMX_P_Kd  =  0x7E
+    ## Speed Kp Register
+    MMX_S_Kp  =  0x80
+    ## Speed Ki Register
+    MMX_S_Ki  =  0x82
+    ## Speed Kd Register
+    MMX_S_Kd  =  0x84
+    ## Pass Count Register
+    MMX_PASSCOUNT  =  0x86
+    ## Pass Tolerance Register
+    MMX_PASSTOLERANCE  =  0x87
+
+    ## Initialize the class with the i2c address of your NXTMMX
+    #  @param self The object pointer.
+    #  @param mmx_address Address of your NXTMMX.
+    def __init__(self, port, mmx_address = MMX_ADDRESS):
+        #the NXTMMX address
+        mindsensors_i2c.__init__(self,port, mmx_address)
+
+    ## Writes a specified command on the command register of the NXTMMX
+    #  @param self The object pointer.
+    #  @param cmd The command you wish the NXTMMX to execute.
+    def command(self, cmd):
+       self.writeByte(self.MMX_COMMAND, int(cmd))
+
+    ## Reset the both motor encoders of the NXTMMX
+    #  @param self The object pointer.
+    def resPos(self):
+       self.command(82)
+
+    ## Reads the battery voltage
+    #  @param self The object pointer.
+    def battVoltage(self):
+        try:
+            return self.readByte(self.MMX_COMMAND) * self.MMX_VOLTAGE_MULTIPLIER #37
+        except:
+            print ("Error: Could not read voltage")
+            return ""
+
+    ## Reads the encoder position of the specified motor
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor you wish to read.
+    def pos(self, motor_number):
+        try:
+            if motor_number == 1 :
+                return self.readLongSigned(self.MMX_POSITION_M1)
+            if motor_number == 2 :
+                return self.readLongSigned(self.MMX_POSITION_M2)
+        except:
+            print ("Error: Could not read encoder position")
+            return ""
+
+    ## Run the motor(s) at a set speed for an unlimited duration
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to turn.
+    #  @param speed The speed at which you wish to turn the motor(s).
+    def setSpeed( self, motor_number, speed ):
+
+        ctrl = 0
+        ctrl |= self.MMX_CONTROL_SPEED
+        ctrl |= self.MMX_CONTROL_BRK
+
+        if ( motor_number != self.MMX_Motor_Both ):
+            ctrl |= self.MMX_CONTROL_GO
+        if ( (motor_number & 0x01) != 0 ):
+            array = [speed, 0, 0, ctrl]
+            self.writeArray( self.MMX_SPEED_M1, array)
+        if ( (motor_number & 0x02) != 0 ):
+            array = [speed, 0, 0, ctrl]
+            self.writeArray( self.MMX_SPEED_M2, array)
+        if ( motor_number == self.MMX_Motor_Both ) :
+            self.writeByte(self.MMX_COMMAND, 83)
+
+    ### @cond Doxygen_ignore_this
+    ## Stops the specified motor(s)
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to stop.
+    #  @param next_action How you wish to stop the motor(s).
+    def MMX_Stop( self, motor_number, next_action ):
+
+        if ( next_action == self.MMX_Next_Action_Brake or next_action == self.MMX_Next_Action_BrakeHold ):
+            if (motor_number == self.MMX_Motor_1):
+                self.writeByte(self.MMX_COMMAND, 65)
+            if (motor_number == self.MMX_Motor_2):
+                self.writeByte(self.MMX_COMMAND, 66)
+            if (motor_number == self.MMX_Motor_Both):
+                self.writeByte(self.MMX_COMMAND, 67)
+        else:
+            if (motor_number == self.MMX_Motor_1):
+                self.writeByte(self.MMX_COMMAND, 97)
+            if (motor_number == self.MMX_Motor_2):
+                self.writeByte(self.MMX_COMMAND, 98)
+            if (motor_number == self.MMX_Motor_Both):
+                self.writeByte(self.MMX_COMMAND, 99)
+
+    def status(self, motor_number):
+        if (motor_number == 1):
+            return self.readByte(self.MMX_STATUS_M1)
+        if (motor_number == 2):
+            return self.readByte(self.MMX_STATUS_M2)
+
+    def statusBit(self, motor_number, bitno = 0):
+        return (self.status(motor_number) >> bitno) & 1
+    ### @endcond
+
+    ## Stop the motor with abruptly with brake
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to brake.
+    def brake(self, motor_number):
+        self.MMX_Stop(motor_number, self.MMX_Next_Action_Brake)
+
+    ## Stop the motor smoothly with float
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to float.
+    def float(self, motor_number):
+        self.MMX_Stop(motor_number, self.MMX_Next_Action_Float)
+
+    ## Stop the motor abruptly and hold the current position
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to hold.
+    def hold(self, motor_number):
+        self.MMX_Stop(motor_number, self.MMX_Next_Action_BrakeHold)
+
+    ## Check if the motor is running
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to check.
+    def isBusy(self, motor_number):
+        return self.statusBit(motor_number, 0) == 1 or self.statusBit(motor_number, 1) == 1 or self.statusBit(motor_number, 3) == 1 or self.statusBit(motor_number, 6) == 1
+
+    ## Wait until the motor is no longer running
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to wait for.
+    #  @param timeout The timeout value as a factor of 10ms.
+    def waitUntilNotBusy(self, motor_number, timeout=-1):
+        while(self.isBusy(motor_number)):
+            time.sleep(.01)
+            timeout -= 1
+            if(timeout == 0):
+                return 1
+            if(timeout <-5):
+                timeout = -1
+            pass
+        return 0
+
+    ## Check if the motor is stalled
+    #  @param motor_number Number of the motor(s) you wish to check.
+    #  @param self The object pointer.
+    def isStalled(self, motor_number):
+        return self.statusBit(motor_number, 7) == 1
+
+    ## Check if the motor is overloaded
+    #  @param self The object pointer.
+    def isOverloaded(self):
+        return self.statusBit(motor_number, 5) == 1
+
+    ## Run the motor for a specific time in seconds
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to turn.
+    #  @param secs The number of seconds to run the motor.
+    #  @param speed The speed at which to turn the motor.
+    #  @param brakeOnCompletion Choose to brake or float the motor upon completion with True (brake) or False (float).
+    #  @param waitForCompletion Wait until the motor is finished running before continuing the program.
+    def runSecs( self, motor_number, secs, speed, brakeOnCompletion = False, waitForCompletion = False ):
+        ctrl = 0
+        ctrl |= self.MMX_CONTROL_SPEED
+        ctrl |= self.MMX_CONTROL_TIME
+
+        if ( brakeOnCompletion == True ):
+            ctrl |= self.MMX_CONTROL_BRK
+        if ( motor_number != self.MMX_Motor_Both ):
+            ctrl |= self.MMX_CONTROL_GO
+        if ( (motor_number & 0x01) != 0 ):
+            array = [speed, secs, 0, ctrl]
+            self.writeArray( self.MMX_SPEED_M1, array)
+        if ( (motor_number & 0x02) != 0 ) :
+            array = [speed, secs, 0, ctrl]
+            self.writeArray( self.MMX_SPEED_M2, array)
+        if ( motor_number == self.MMX_Motor_Both ) :
+            self.writeByte(self.MMX_COMMAND, 83)
+        if ( waitForCompletion == True ):
+            time.sleep(0.050)  # this delay is required for the status byte to be available for reading.
+            self.MMX_WaitUntilTimeDone(motor_number)
+
+    ### @cond
+    ## Waits until the specified time for the motor(s) to run is completed
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) to wait for.
+    def MMX_WaitUntilTimeDone(self,motor_number):
+        while self.MMX_IsTimeDone(motor_number) != True:
+            time.sleep(0.050)
+
+    ## Checks to ensure the specified time for the motor(s) to run is completed.
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) to check.
+    def  MMX_IsTimeDone(self, motor_number):
+        if ( motor_number == self.MMX_Motor_1 ):
+            result = self.readByte(self.MMX_STATUS_M1)
+            # look for the time bit to be zero.
+            if (( result & 0x40 ) == 0 ):
+                return True
+        elif ( motor_number == self.MMX_Motor_2 ) :
+            result = self.readByte(self.MMX_STATUS_M2)
+            # look for the time bit to be zero.
+            if (( result & 0x40 ) == 0 ):
+                return True
+        elif ( motor_number == self.MMX_Motor_Both ):
+            result = self.readByte(self.MMX_STATUS_M1)
+            result2 = self.readByte(self.MMX_STATUS_M2)
+            # look for both time bits to be zero
+            if (((result & 0x40) == 0) &((result2 & 0x40) == 0) ):
+                return True
+        else :
+            return False
+    ### @endcond
+
+    ## Run the motor for a specific amount of degrees
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to turn.
+    #  @param degs The number of degrees to run the motor(s).
+    #  @param speed The speed at which to turn the motor(s).
+    #  @param brakeOnCompletion Choose to brake or float the motor upon completion with True (brake) or False (float).
+    #  @param holdOnCompletion Choose to hold the motor position upon completion with True (hold) or False (release).
+    #  @param waitForCompletion Tells the program when to handle the next line of code.
+    def runDegs(self, motor_number, degs, speed, brakeOnCompletion = False, holdOnCompletion = False, waitForCompletion = False):
+        ctrl = 0
+        ctrl |= self.MMX_CONTROL_SPEED
+        ctrl |= self.MMX_CONTROL_TACHO
+        ctrl |= self.MMX_CONTROL_RELATIVE
+
+        d = degs
+        t4 = int(d/0x1000000)
+        t3 = int((d%0x1000000)/0x10000)
+        t2 = int(((d%0x1000000)%0x10000)/0x100)
+        t1 = int(((d%0x1000000)%0x10000)%0x100)
+
+        if ( brakeOnCompletion == True ):
+            ctrl |= self.MMX_CONTROL_BRK
+        if ( holdOnCompletion == True ):
+            ctrl |= self.MMX_CONTROL_BRK
+            ctrl |= self.MMX_CONTROL_ON
+        if ( motor_number != self.MMX_Motor_Both ):
+            ctrl |= self.MMX_CONTROL_GO
+        if ( (motor_number & 0x01) != 0 ):
+            array = [t1, t2, t3, t4, speed, 0, 0, ctrl]
+            self.writeArray(self.MMX_SETPT_M1, array)
+        if ( (motor_number & 0x02) != 0 ) :
+            array = [t1, t2, t3, t4, speed, 0, 0, ctrl]
+            self.writeArray(self.MMX_SETPT_M2, array)
+        if ( motor_number == self.MMX_Motor_Both ) :
+            self.writeByte(self.MMX_COMMAND, 83)
+        if ( waitForCompletion == True ):
+            time.sleep(0.050)  # this delay is required for the status byte to be available for reading.
+            self.MMX_WaitUntilTachoDone(motor_number)
+
+    ## Run the motor for a specific amount of rotations
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to turn.
+    #  @param rotations The number of rotations to run the motor(s).
+    #  @param speed The speed at which to turn the motor(s).
+    #  @param brakeOnCompletion Choose to brake or float the motor upon completion with True (brake) or False (float).
+    #  @param holdOnCompletion Choose to hold the motor position upon completion with True (hold) or False (release).
+    #  @param waitForCompletion Tells the program when to handle the next line of code.
+    def runRotations(self, motor_number, rotations, speed, brakeOnCompletion = False, holdOnCompletion = False, waitForCompletion = False):
+        ctrl = 0
+        ctrl |= self.MMX_CONTROL_SPEED
+        ctrl |= self.MMX_CONTROL_TACHO
+        ctrl |= self.MMX_CONTROL_RELATIVE
+
+        d = rotations * 360
+
+        t4 = int(d/0x1000000)
+        t3 = int((d%0x1000000)/0x10000)
+        t2 = int(((d%0x1000000)%0x10000)/0x100)
+        t1 = int(((d%0x1000000)%0x10000)%0x100)
+
+        if ( brakeOnCompletion == True ):
+            ctrl |= self.MMX_CONTROL_BRK
+        if ( holdOnCompletion == True ):
+            ctrl |= self.MMX_CONTROL_BRK
+            ctrl |= self.MMX_CONTROL_ON
+        if ( motor_number != self.MMX_Motor_Both ):
+            ctrl |= self.MMX_CONTROL_GO
+        if ( (motor_number & 0x01) != 0 ):
+            array = [t1, t2, t3, t4, speed, 0, 0, ctrl]
+            print(array)
+            self.writeArray(self.MMX_SETPT_M1, array)
+        if ( (motor_number & 0x02) != 0 ) :
+            array = [t1, t2, t3, t4, speed, 0, 0, ctrl]
+            print(array)
+            self.writeArray(self.MMX_SETPT_M2, array)
+        if ( motor_number == self.MMX_Motor_Both ) :
+            self.writeByte(self.MMX_COMMAND, 83)
+        if ( waitForCompletion == True ):
+            time.sleep(0.050)  # this delay is required for the status byte to be available for reading.
+            self.MMX_WaitUntilTachoDone(motor_number)
+
+    ## Run the motor for a specific amount of rotations
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) you wish to turn.
+    #  @param pos The encoder value to which to run the motor(s).
+    #  @param speed The speed at which to turn the motor(s).
+    #  @param brakeOnCompletion Choose to brake or float the motor upon completion with True (brake) or False (float).
+    #  @param holdOnCompletion Choose to hold the motor position upon completion with True (hold) or False (release).
+    #  @param waitForCompletion Tells the program when to handle the next line of code.
+    def runEncoderPos(self, motor_number, pos, speed, brakeOnCompletion = False, holdOnCompletion = False, waitForCompletion = False):
+        ctrl = 0
+        ctrl |= self.MMX_CONTROL_SPEED
+        ctrl |= self.MMX_CONTROL_TACHO
+        d = pos
+
+        t4 = int(d/0x1000000)
+        t3 = int((d%0x1000000)/0x10000)
+        t2 = int(((d%0x1000000)%0x10000)/0x100)
+        t1 = int(((d%0x1000000)%0x10000)%0x100)
+
+        if ( brakeOnCompletion == True ):
+            ctrl |= self.MMX_CONTROL_BRK
+        if ( holdOnCompletion == True ):
+            ctrl |= self.MMX_CONTROL_BRK
+            ctrl |= self.MMX_CONTROL_ON
+        if ( motor_number != self.MMX_Motor_Both ):
+            ctrl |= self.MMX_CONTROL_GO
+        if ( (motor_number & 0x01) != 0 ):
+            array = [t1, t2, t3, t4, speed, 0, 0, ctrl]
+            self.writeArray(self.MMX_SETPT_M1, array)
+        if ( (motor_number & 0x02) != 0 ):
+            array = [t1, t2, t3, t4, speed, 0, 0, ctrl]
+            self.writeArray(self.MMX_SETPT_M2, array)
+        if ( motor_number == self.MMX_Motor_Both ) :
+            self.writeByte(self.MMX_COMMAND, 83)
+        if ( waitForCompletion == True ):
+            time.sleep(0.050)  # this delay is required for the status byte to be available for reading.
+            self.MMX_WaitUntilTachoDone(motor_number)
+
+    ### @cond
+    ## Waits until the specified tacheomter count for the motor(s) to run is reached.
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) to wait for.
+    def MMX_WaitUntilTachoDone(self,motor_number):
+        while self.MMX_IsTachoDone(motor_number) != True:
+            time.sleep(0.050)
+
+    ## Checks to ensure the specified tacheomter count for the motor(s) to run is reached.
+    #  @param self The object pointer.
+    #  @param motor_number Number of the motor(s) to check.
+    def  MMX_IsTachoDone(self, motor_number):
+        if ( motor_number == self.MMX_Motor_1 ):
+            result = self.readByte(self.MMX_STATUS_M1)
+            # look for the time bit to be zero.
+            if (( result & 0x08 ) == 0 ):
+                return True
+        elif ( motor_number == self.MMX_Motor_2 ) :
+            result = self.readByte(self.MMX_STATUS_M2)
+            # look for the time bit to be zero.
+            if (( result & 0x08 ) == 0 ):
+                return True
+        elif ( motor_number == self.MMX_Motor_Both ):
+            result = self.readByte(self.MMX_STATUS_M1)
+            result2 = self.readByte(self.MMX_STATUS_M2)
+            # look for both time bits to be zero
+            if (((result & 0x08) == 0) & ((result2 & 0x08) == 0) ):
+                return True
+        else :
+            return False
+    ### @endcond
+
+    ## Writes user specified values to the PID control registers
+    #  @param self The object pointer.
+    #  @param Kp_tacho Proportional-gain of the encoder position of the motor.
+    #  @param Ki_tacho Integral-gain of the encoder position of the motor.
+    #  @param Kd_tacho Derivative-gain of the encoder position of the motor.
+    #  @param Kp_speed Proportional-gain of the speed of the motor.
+    #  @param Ki_speed Integral-gain of the speed of the motor.
+    #  @param Kd_speed Derivative-gain of the speed of the motor.
+    #  @param passcount The number of times the encoder reading should be within tolerance.
+    #  @param tolerance The tolerance (in ticks) for encoder positioning .
+    def SetPerformanceParameters(self, Kp_tacho, Ki_tacho, Kd_tacho, Kp_speed, Ki_speed, Kd_speed, passcount, tolerance):
+        Kp_t1 = Kp_tacho%0x100
+        Kp_t2 = Kp_tacho/0x100
+        Ki_t1 = Ki_tacho%0x100
+        Ki_t2 = Ki_tacho/0x100
+        Kd_t1 = Kd_tacho%0x100
+        Kd_t2 = Kd_tacho/0x100
+        Kp_s1 = Kp_speed%0x100
+        Kp_s2 = Kp_speed/0x100
+        Ki_s1 = Ki_speed%0x100
+        Ki_s2 = Ki_speed/0x100
+        Kd_s1 = Kd_speed%0x100
+        Kd_s2 = Kd_speed/0x100
+        print ("Kp_t1: " + str(Kp_t1))
+        print ("Kp_t2: " + str(Kp_t2))
+        print ("Ki_t1: " + str(Ki_t1))
+        print ("Ki_t2: " + str(Ki_t2))
+        print ("Kd_t1: " + str(Kd_t1))
+        print ("Kd_t2: " + str(Kd_t2))
+        print ("Kp_s1: " + str(Kp_s1))
+        print ("Kp_s2: " + str(Kp_s2))
+        print ("Ki_s1: " + str(Ki_s1))
+        print ("Ki_s2: " + str(Ki_s2))
+        print ("Kd_s1: " + str(Kd_s1))
+        print ("Kd_s2: " + str(Kd_s2))
+        passcount = passcount
+        tolerance = tolerance
+        array = [Kp_t1 , Kp_t2 , Ki_t1, Ki_t2, Kd_t1, Kd_t2, Kp_s1, Kp_s2, Ki_s1, Ki_s2, Kd_s1, Kd_s2, passcount, tolerance]
+        self.writeArray(self.MMX_P_Kp, array)
+
+    ## Reads the values of the PID control registers
+    #  @param self The object pointer.
+    def ReadPerformanceParameters(self):
+        try:
+            print ("Pkp: " + str(self.readInteger(self.MMX_P_Kp)))
+            print ("Pki: " + str(self.readInteger(self.MMX_P_Ki)))
+            print ("Pkd: " + str(self.readInteger(self.MMX_P_Kd)))
+            print ("Skp: " + str(self.readInteger(self.MMX_S_Kp)))
+            print ("Ski: " + str(self.readInteger(self.MMX_S_Ki)))
+            print ("Skd: " + str(self.readInteger(self.MMX_S_Kd)))
+            print ("Passcount: " + str(self.MMX_PASSCOUNT))
+            print ("Tolerance: " + str(self.MMX_PASSTOLERANCE))
+        except:
+            print ("Error: Could not read PID values")
+            return ""
+
+
+        
